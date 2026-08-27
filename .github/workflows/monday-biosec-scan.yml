@@ -1,1 +1,43 @@
+name: Monday Biosecurity Scan
 
+on:
+  schedule:
+    # Monday 9:00 AM São Paulo time (12:00 PM UTC)
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+
+jobs:
+  update-library:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install anthropic --quiet
+
+      - name: Run biosecurity scan
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python scripts/update-biosec.py
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: 'Monday biosecurity signal update'
+          title: 'Weekly update: biosecurity signals'
+          body: 'Automated weekly scan for high-signal biosecurity articles and market data.'
+          branch: update-biosec-${{ github.run_number }}
+          delete-branch: true
